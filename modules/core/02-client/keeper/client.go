@@ -1,12 +1,11 @@
 package keeper
 
 import (
-	metrics "github.com/hashicorp/go-metrics"
-
 	errorsmod "cosmossdk.io/errors"
-
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	tendermint "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	"github.com/hashicorp/go-metrics"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -30,7 +29,13 @@ func (k Keeper) CreateClient(
 		)
 	}
 
-	clientID := k.GenerateClientIdentifier(ctx, clientState.ClientType())
+	var clientID string
+	if k.overwriteClient(ctx, clientState) {
+		clientID = "07-tendermint-1"
+	} else {
+		clientID = k.GenerateClientIdentifier(ctx, clientState.ClientType())
+	}
+
 	clientStore := k.ClientStore(ctx, clientID)
 
 	if err := clientState.Initialize(ctx, k.cdc, clientStore, consensusState); err != nil {
@@ -52,6 +57,34 @@ func (k Keeper) CreateClient(
 	emitCreateClientEvent(ctx, clientID, clientState)
 
 	return clientID, nil
+}
+
+// overwriteClient checks if the client for ID 07-tendermint-1 shall be overwritten. This function will return true
+// when the new client is for the chain injective-1 AND when the current client with ID 07-tendermint-1 is for the
+// chain cosmoshub-4
+func (k Keeper) overwriteClient(ctx sdk.Context, clientState exported.ClientState) bool {
+	cs, ok := clientState.(*tendermint.ClientState)
+	if !ok {
+		return false
+	}
+
+	if cs.ChainId != "injective-1" {
+		return false
+	}
+
+	var seen bool
+	k.IterateClientStates(ctx, nil, func(clientID string, state exported.ClientState) bool {
+		cs, ok = state.(*tendermint.ClientState)
+		if ok {
+			if clientID == "07-tendermint-1" && cs.ChainId == "cosmoshub-4" {
+				seen = true
+			}
+		}
+
+		return false
+	})
+
+	return seen
 }
 
 // UpdateClient updates the consensus state and the state root from a provided header.
