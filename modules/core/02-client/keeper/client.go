@@ -11,6 +11,12 @@ import (
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
+const (
+	incorrectClientID = "07-tendermint-1"
+	incorrectChainID  = "cosmoshub-4"
+	newChainID        = "injective-1"
+)
+
 // CreateClient generates a new client identifier and isolated prefix store for the provided client state.
 // The client state is responsible for setting any client-specific data in the store via the Initialize method.
 // This includes the client state, initial consensus state and any associated metadata.
@@ -31,7 +37,7 @@ func (k Keeper) CreateClient(
 
 	var clientID string
 	if k.overwriteClient(ctx, clientState) {
-		clientID = "07-tendermint-1"
+		clientID = incorrectClientID
 	} else {
 		clientID = k.GenerateClientIdentifier(ctx, clientState.ClientType())
 	}
@@ -68,7 +74,7 @@ func (k Keeper) overwriteClient(ctx sdk.Context, clientState exported.ClientStat
 		return false
 	}
 
-	if cs.ChainId != "injective-1" {
+	if cs.ChainId != newChainID {
 		return false
 	}
 
@@ -76,7 +82,7 @@ func (k Keeper) overwriteClient(ctx sdk.Context, clientState exported.ClientStat
 	k.IterateClientStates(ctx, nil, func(clientID string, state exported.ClientState) bool {
 		cs, ok = state.(*tendermint.ClientState)
 		if ok {
-			if clientID == "07-tendermint-1" && cs.ChainId == "cosmoshub-4" {
+			if clientID == incorrectClientID && cs.ChainId == incorrectChainID {
 				seen = true
 			}
 		}
