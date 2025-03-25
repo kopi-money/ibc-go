@@ -1,4 +1,5 @@
 go 1.21
+toolchain go1.24.1
 
 module github.com/cosmos/ibc-go/v8
 
@@ -41,7 +42,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240624140628-dc46fd24d27d
 	google.golang.org/grpc v1.64.1
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v2 v2.4.0
 )
 
